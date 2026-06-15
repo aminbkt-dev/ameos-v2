@@ -1,0 +1,72 @@
+# ============================================================
+# AmeOS v2 — Modern data stack pipeline
+# Shopify → Microsoft Fabric (Lakehouse + Warehouse) → dbt → Power BI
+# ============================================================
+
+name: 'ameos_v2'
+version: '1.0.0'
+config-version: 2
+
+# Profile reference (in dbt Cloud, managed by connection setup)
+profile: 'default'
+
+# ============================================================
+# Directory paths
+# ============================================================
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+  - "logs"
+
+# ============================================================
+# Models configuration — Médaillon (silver + gold)
+# ============================================================
+models:
+  ameos_v2:
+    # Staging layer → silver schema, materialized as views
+    staging:
+      +materialized: view
+      +schema: silver
+      shopify:
+        +tags: ["shopify", "staging"]
+      business:
+        +tags: ["business", "staging"]
+    
+    # Intermediate layer → silver schema, ephemeral (inline CTEs, not stored)
+    intermediate:
+      +materialized: ephemeral
+      +schema: silver
+      +tags: ["intermediate"]
+    
+    # Marts layer → gold schema, materialized as tables
+    marts:
+      +materialized: table
+      +schema: gold
+      core:
+        +tags: ["marts", "core"]
+      finance:
+        +tags: ["marts", "finance"]
+      inventory:
+        +tags: ["marts", "inventory"]
+
+# ============================================================
+# Seeds → silver schema (business data: costs, drops, drop_products)
+# ============================================================
+seeds:
+  ameos_v2:
+    +schema: silver
+    +quote_columns: false
+
+# ============================================================
+# Snapshots (SCD2 for future use)
+# ============================================================
+snapshots:
+  ameos_v2:
+    +schema: snapshots
