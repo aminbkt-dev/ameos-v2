@@ -34,10 +34,8 @@ models:
     staging:
       +materialized: view
       +schema: silver
-      shopify:
-        +tags: ["shopify", "staging"]
-      business:
-        +tags: ["business", "staging"]
+      orders:
+        +tags: ["shopify", "staging", "manual"]
     
     # Intermediate layer → silver schema, ephemeral (inline CTEs, not stored)
     intermediate:
