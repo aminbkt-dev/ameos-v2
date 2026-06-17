@@ -21,7 +21,7 @@
 
 WITH source AS (
     SELECT
-        order_id,
+        id,
         raw_json,
         ingested_at,
         source,
@@ -32,7 +32,7 @@ WITH source AS (
 parsed AS (
     SELECT
         -- ─── IDENTIFIANTS ─────────────────────────────────────
-        CAST(order_id AS BIGINT)                                        AS order_id,
+        CAST(id AS BIGINT)                                        AS order_id,
         JSON_VALUE(raw_json, '$.name')                                  AS order_name,           -- ex: "AME1711"
         JSON_VALUE(raw_json, '$.order_number')                          AS order_number,         -- ex: "1711"
         

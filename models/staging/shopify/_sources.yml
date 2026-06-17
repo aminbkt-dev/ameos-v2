@@ -1,0 +1,100 @@
+version: 2
+
+sources:
+  # ============================================================
+  # SHOPIFY ADMIN API (Lakehouse Bronze)
+  # ============================================================
+  - name: shopify
+    description: "Données brutes Shopify Admin API ingérées dans le Lakehouse Bronze via Fabric Notebooks. Pattern : pagination cursor-based, ingestion factorisée multi-entités, pre-extraction des sous-tableaux pour contourner la limitation VARCHAR(8000) du SQL Endpoint Lakehouse."
+    database: lh_bronze
+    schema: dbo
+    
+    tables:
+      # ─── ORDERS ───────────────────────────────────────────
+      - name: raw_shopify_orders
+        description: "Commandes Shopify brutes. JSON parent (sans line_items) + métadonnées d'ingestion. Note : raw_json peut être tronqué à 8000 chars par le SQL Endpoint, mais JSON_VALUE() reste fonctionnel sur les champs critiques (qui sont en début de JSON)."
+        columns:
+          - name: id
+            description: "Shopify order ID (clé primaire native Shopify)."
+            tests:
+              - not_null
+              - unique
+          - name: raw_json
+            description: "Payload JSON parent (sans line_items, extraits dans raw_shopify_order_items)."
+            tests:
+              - not_null
+          - name: ingested_at
+            description: "Timestamp d'ingestion dans le Lakehouse."
+            tests:
+              - not_null
+
+      # ─── ORDER ITEMS (pre-extracted from orders) ─────────
+      - name: raw_shopify_order_items
+        description: "Line items des commandes Shopify, pre-extraits du JSON parent au moment de l'ingestion. Une row par item. Référence le parent via parent_id."
+        columns:
+          - name: parent_id
+            description: "ID de la commande parente (référence raw_shopify_orders.id)."
+            tests:
+              - not_null
+          - name: raw_json
+            description: "Payload JSON complet du line item (product_id, variant_id, title, quantity, price, total_discount, etc.)."
+            tests:
+              - not_null
+          - name: nested_from
+            description: "Indique le champ d'origine du JSON parent ('line_items'). Trace de l'extraction."
+          - name: ingested_at
+            tests:
+              - not_null
+
+      # ─── PRODUCTS ─────────────────────────────────────────
+      - name: raw_shopify_products
+        description: "Produits Shopify bruts. JSON parent (sans variants) + métadonnées d'ingestion."
+        columns:
+          - name: id
+            description: "Shopify product ID."
+            tests:
+              - not_null
+              - unique
+          - name: raw_json
+            description: "Payload JSON parent (sans variants[], extraits dans raw_shopify_product_variants)."
+            tests:
+              - not_null
+          - name: ingested_at
+            tests:
+              - not_null
+
+      # ─── PRODUCT VARIANTS (pre-extracted from products) ──
+      - name: raw_shopify_product_variants
+        description: "Variants des produits Shopify (tailles × couleurs typiquement). Pre-extraits du JSON parent à l'ingestion. Une row par variant. Référence le produit parent via parent_id."
+        columns:
+          - name: parent_id
+            description: "ID du produit parent (référence raw_shopify_products.id)."
+            tests:
+              - not_null
+          - name: raw_json
+            description: "Payload JSON complet du variant (sku, price, inventory_quantity, option1, option2, etc.)."
+            tests:
+              - not_null
+          - name: nested_from
+            description: "Indique le champ d'origine ('variants')."
+          - name: ingested_at
+            tests:
+              - not_null
+
+      # ─── CUSTOMERS ────────────────────────────────────────
+      - name: raw_shopify_customers
+        description: "Clients Shopify bruts. JSON parent + métadonnées. Note : ~3000 lignes, dont une majorité sont des leads newsletter sans commande (signup pop-up Shopify). À segmenter en Silver."
+        columns:
+          - name: id
+            description: "Shopify customer ID."
+            tests:
+              - not_null
+              - unique
+          - name: raw_json
+            description: "Payload JSON complet du client (peut inclure default_address et addresses[]). Risque de troncation à 8000 chars si plusieurs adresses, mais les champs critiques (email, first_name, last_name, orders_count, total_spent) sont en début de JSON."
+            tests:
+              - not_null
+          - name: ingested_at
+            tests:
+              - not_null
+
