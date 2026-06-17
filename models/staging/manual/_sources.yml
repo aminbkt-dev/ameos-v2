@@ -1,41 +1,7 @@
 version: 2
 
 sources:
-  # ============================================================
-  # SHOPIFY ADMIN API (Lakehouse Bronze)
-  # ============================================================
-  - name: shopify
-    description: "Données brutes Shopify Admin API ingérées dans le Lakehouse Bronze via Fabric Notebooks (pagination cursor-based)."
-    database: lh_bronze
-    schema: dbo
-    
-    tables:
-      - name: raw_shopify_orders
-        description: "Commandes Shopify brutes — JSON intégral dans colonne raw_json + métadonnées d'ingestion."
-        columns:
-          - name: order_id
-            description: "Shopify order ID (clé primaire native Shopify)."
-            tests:
-              - not_null
-              - unique
-          - name: raw_json
-            description: "Payload JSON complet de la commande, parsé en Silver."
-            tests:
-              - not_null
-          - name: ingested_at
-            description: "Timestamp d'ingestion dans le Lakehouse."
-            tests:
-              - not_null
-          - name: source
-            description: "Identifiant source, toujours 'shopify_admin_api' pour cette table."
-          - name: api_version
-            description: "Version API Shopify utilisée (ex: 2026-04)."
-          - name: shop_domain
-            description: "Domaine du shop source (amesportswear.myshopify.com)."
 
-  # ============================================================
-  # MANUAL ORDERS (CSV interne, legacy V1)
-  # ============================================================
   - name: manual
     description: "Commandes hors-Shopify saisies manuellement (drops physiques, ventes directes, événements). Import depuis CSV V1 Supabase legacy."
     database: lh_bronze

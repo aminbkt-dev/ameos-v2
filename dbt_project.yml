@@ -30,20 +30,28 @@ clean-targets:
 # ============================================================
 models:
   ameos_v2:
-    # Staging layer → silver schema, materialized as views
+    # ─── STAGING LAYER ────────────────────────────────────────
+    # Organisé par source-system (shopify, manual) puis unification
+    # Matérialisation : views dans le schéma silver
     staging:
       +materialized: view
       +schema: silver
-      orders:
-        +tags: ["shopify", "staging", "manual"]
+      shopify:
+        +tags: ["staging", "shopify"]
+      manual:
+        +tags: ["staging", "manual"]
+      _unified:
+        +tags: ["staging", "unified"]
     
-    # Intermediate layer → silver schema, ephemeral (inline CTEs, not stored)
+    # ─── INTERMEDIATE LAYER ───────────────────────────────────
+    # Modèles éphémères (CTEs inline, pas matérialisés)
     intermediate:
       +materialized: ephemeral
       +schema: silver
       +tags: ["intermediate"]
     
-    # Marts layer → gold schema, materialized as tables
+    # ─── MARTS LAYER ──────────────────────────────────────────
+    # Tables matérialisées dans le schéma gold
     marts:
       +materialized: table
       +schema: gold
